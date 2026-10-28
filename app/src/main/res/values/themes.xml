@@ -1,0 +1,7 @@
+<resources>
+    <style name="Theme.OrbitGolf" parent="@android:style/Theme.DeviceDefault.NoActionBar">
+        <item name="android:windowBackground">@color/space</item>
+        <item name="android:statusBarColor">@color/space</item>
+        <item name="android:navigationBarColor">@color/space</item>
+    </style>
+</resources>

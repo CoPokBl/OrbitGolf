@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 108dp adaptive foreground: planet, dotted orbit, ball, flag. Safe zone is the centre 66dp. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- orbit ring -->
+    <path
+        android:pathData="M54,54m-25,0a25,25 0,1 1,50 0a25,25 0,1 1,-50 0"
+        android:strokeColor="#5FD4FF"
+        android:strokeAlpha="0.55"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+    <!-- planet -->
+    <path
+        android:pathData="M54,54m-14,0a14,14 0,1 1,28 0a14,14 0,1 1,-28 0"
+        android:fillColor="#3FA9F5" />
+    <path
+        android:pathData="M48,47m-5,0a5,5 0,1 1,10 0a5,5 0,1 1,-10 0"
+        android:fillColor="#8FD6FF"
+        android:fillAlpha="0.6" />
+    <!-- ball trail -->
+    <path
+        android:pathData="M70,38 L75,33"
+        android:strokeColor="#FFFFFF"
+        android:strokeAlpha="0.5"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round" />
+    <!-- ball -->
+    <path
+        android:pathData="M69.5,38.5m-4,0a4,4 0,1 1,8 0a4,4 0,1 1,-8 0"
+        android:fillColor="#FFFFFF" />
+    <!-- flag -->
+    <path
+        android:pathData="M78,24 L78,38"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.5" />
+    <path
+        android:pathData="M78,24 L85,27 L78,30 Z"
+        android:fillColor="#5CF08A" />
+</vector>
