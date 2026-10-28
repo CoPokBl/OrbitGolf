@@ -11,8 +11,23 @@ android {
         applicationId = "com.copokbl.orbitgolf"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        // CI passes these from the git tag; local builds get 1 / "dev".
+        versionCode = (project.findProperty("versionCode") as String?)?.toInt() ?: 1
+        versionName = (project.findProperty("versionName") as String?) ?: "dev"
+    }
+
+    signingConfigs {
+        // Release key comes from the environment (CI secrets). Keep it the same forever:
+        // Android refuses updates signed with a different key.
+        val ks = System.getenv("ORBIT_KEYSTORE")
+        if (ks != null && file(ks).exists()) {
+            create("release") {
+                storeFile = file(ks)
+                storePassword = System.getenv("ORBIT_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("ORBIT_KEY_ALIAS")
+                keyPassword = System.getenv("ORBIT_KEY_PASSWORD") ?: System.getenv("ORBIT_KEYSTORE_PASSWORD")
+            }
+        }
     }
 
     buildTypes {
@@ -20,9 +35,8 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
-            // Signed with the debug key so the release APK installs straight onto a phone.
-            // Swap in your own signingConfig if you ever publish it.
-            signingConfig = signingConfigs.getByName("debug")
+            // Real release key when provided, otherwise the local debug key so it still installs.
+            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
         }
     }
 

@@ -14,7 +14,7 @@ A one-tap space golf game for Android. Your ball orbits a planet. Tap to break a
 
 ## Install on your phone
 
-Build a release APK (signed with the local debug key so it installs directly):
+Grab the APK from the latest GitHub release, or build one yourself (signed with the local debug key unless a release key is configured; see below):
 
 ```bash
 ./gradlew assembleRelease
@@ -27,6 +27,39 @@ adb install -r app/build/outputs/apk/release/app-release.apk
 ```
 
 Building needs JDK 17+ and the Android SDK (platform 35). Point `local.properties` at it with `sdk.dir=/path/to/sdk`, or set `ANDROID_HOME`.
+
+## Releases (GitHub + Obtainium)
+
+`.github/workflows/release.yml` builds, tests and signs the APK. It then publishes it as a GitHub release whenever you push a version tag:
+
+```bash
+git tag v1.0.0
+```
+
+```bash
+git push origin v1.0.0
+```
+
+You can also run it from the Actions tab with "Run workflow" and a tag. The version name comes from the tag, and `versionCode` is `major*1000000 + minor*1000 + patch`, so every newer tag counts as an upgrade.
+
+To get updates in Obtainium, add `https://github.com/CoPokBl/OrbitGolf` as an app.
+
+**One-time setup: a signing key.** Every release must be signed with the same key, or Android refuses the update. Create one and keep a backup somewhere safe:
+
+```bash
+keytool -genkeypair -keystore orbitgolf.jks -alias orbitgolf -keyalg RSA -keysize 4096 -validity 20000 -dname "CN=Orbit Golf"
+```
+
+Then add these repository secrets (Settings → Secrets and variables → Actions):
+
+| Secret | Value |
+|---|---|
+| `ORBIT_KEYSTORE_BASE64` | output of `base64 -w0 orbitgolf.jks` |
+| `ORBIT_KEYSTORE_PASSWORD` | the keystore password |
+| `ORBIT_KEY_ALIAS` | `orbitgolf` |
+| `ORBIT_KEY_PASSWORD` | the key password (same as the keystore password unless you chose otherwise) |
+
+Never commit the `.jks` file. Local builds use the same key if you set `ORBIT_KEYSTORE`, `ORBIT_KEYSTORE_PASSWORD` and `ORBIT_KEY_ALIAS` in the environment; otherwise they fall back to the debug key.
 
 ## How to play
 

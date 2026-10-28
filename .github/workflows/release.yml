@@ -1,0 +1,75 @@
+name: Release
+
+# Push a tag like v1.2.3 to build, sign and publish an APK as a GitHub release.
+# Obtainium: add the repo URL (https://github.com/CoPokBl/OrbitGolf) and it picks up the APK.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to release (e.g. v1.2.3); created on the current commit if it doesn't exist"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Work out version from tag
+        id: ver
+        run: |
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          VER="${TAG#v}"
+          if ! [[ "$VER" =~ ^([0-9]+)\.([0-9]+)(\.([0-9]+))?$ ]]; then
+            echo "::error::Tag '$TAG' must look like v1.2 or v1.2.3"; exit 1
+          fi
+          MAJOR=${BASH_REMATCH[1]}; MINOR=${BASH_REMATCH[2]}; PATCH=${BASH_REMATCH[4]:-0}
+          # Monotonic versionCode so Android (and Obtainium) treat newer tags as upgrades.
+          CODE=$((MAJOR * 1000000 + MINOR * 1000 + PATCH))
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "name=$VER" >> "$GITHUB_OUTPUT"
+          echo "code=$CODE" >> "$GITHUB_OUTPUT"
+
+      - name: Decode signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.ORBIT_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ]; then
+            echo "::error::Missing ORBIT_KEYSTORE_BASE64 secret. Without a fixed key, updates can't install over each other. See README > Releases."
+            exit 1
+          fi
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          echo "ORBIT_KEYSTORE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+
+      - name: Test levels and generator
+        run: ./gradlew --no-daemon testDebugUnitTest --tests '*LevelsTest' --tests '*GeneratorTest'
+
+      - name: Build signed APK
+        env:
+          ORBIT_KEYSTORE_PASSWORD: ${{ secrets.ORBIT_KEYSTORE_PASSWORD }}
+          ORBIT_KEY_ALIAS: ${{ secrets.ORBIT_KEY_ALIAS }}
+          ORBIT_KEY_PASSWORD: ${{ secrets.ORBIT_KEY_PASSWORD }}
+        run: |
+          ./gradlew --no-daemon assembleRelease \
+            -PversionCode=${{ steps.ver.outputs.code }} -PversionName=${{ steps.ver.outputs.name }}
+          cp app/build/outputs/apk/release/app-release.apk "OrbitGolf-${{ steps.ver.outputs.tag }}.apk"
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.ver.outputs.tag }}
+          name: Orbit Golf ${{ steps.ver.outputs.tag }}
+          generate_release_notes: true
+          files: OrbitGolf-${{ steps.ver.outputs.tag }}.apk
