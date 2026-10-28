@@ -1,15 +1,20 @@
 name: Release
 
-# Push a tag like v1.2.3 to build, sign and publish an APK as a GitHub release.
+# Every push to main builds, signs and publishes an APK as a new GitHub release (v1.0.N,
+# N = run number). Docs-only pushes are skipped. Can also be run by hand from the Actions tab.
 # Obtainium: add the repo URL (https://github.com/CoPokBl/OrbitGolf) and it picks up the APK.
 on:
   push:
-    tags: ["v*"]
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+      - ".gitignore"
   workflow_dispatch:
-    inputs:
-      tag:
-        description: "Tag to release (e.g. v1.2.3); created on the current commit if it doesn't exist"
-        required: true
+
+# Don't let two quick pushes race to publish.
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -27,20 +32,14 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
-      - name: Work out version from tag
+      - name: Work out version
         id: ver
         run: |
-          TAG="${{ github.event.inputs.tag || github.ref_name }}"
-          VER="${TAG#v}"
-          if ! [[ "$VER" =~ ^([0-9]+)\.([0-9]+)(\.([0-9]+))?$ ]]; then
-            echo "::error::Tag '$TAG' must look like v1.2 or v1.2.3"; exit 1
-          fi
-          MAJOR=${BASH_REMATCH[1]}; MINOR=${BASH_REMATCH[2]}; PATCH=${BASH_REMATCH[4]:-0}
-          # Monotonic versionCode so Android (and Obtainium) treat newer tags as upgrades.
-          CODE=$((MAJOR * 1000000 + MINOR * 1000 + PATCH))
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "name=$VER" >> "$GITHUB_OUTPUT"
-          echo "code=$CODE" >> "$GITHUB_OUTPUT"
+          N=${{ github.run_number }}
+          # run_number only goes up, so each release is an upgrade for Android and Obtainium.
+          echo "tag=v1.0.$N" >> "$GITHUB_OUTPUT"
+          echo "name=1.0.$N" >> "$GITHUB_OUTPUT"
+          echo "code=$((1000000 + N))" >> "$GITHUB_OUTPUT"
 
       - name: Decode signing key
         env:
@@ -70,6 +69,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.ver.outputs.tag }}
+          target_commitish: ${{ github.sha }}
           name: Orbit Golf ${{ steps.ver.outputs.tag }}
           generate_release_notes: true
           files: OrbitGolf-${{ steps.ver.outputs.tag }}.apk

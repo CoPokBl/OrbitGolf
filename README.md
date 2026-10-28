@@ -30,17 +30,7 @@ Building needs JDK 17+ and the Android SDK (platform 35). Point `local.propertie
 
 ## Releases (GitHub + Obtainium)
 
-`.github/workflows/release.yml` builds, tests and signs the APK. It then publishes it as a GitHub release whenever you push a version tag:
-
-```bash
-git tag v1.0.0
-```
-
-```bash
-git push origin v1.0.0
-```
-
-You can also run it from the Actions tab with "Run workflow" and a tag. The version name comes from the tag, and `versionCode` is `major*1000000 + minor*1000 + patch`, so every newer tag counts as an upgrade.
+`.github/workflows/release.yml` runs on every push to `main` (pushes that only change docs are skipped). It builds, tests and signs the APK, then publishes it as a new GitHub release tagged `v1.0.N`, where N is the workflow run number. N only ever goes up, so each release installs as an upgrade. You can also trigger it by hand from the Actions tab with "Run workflow".
 
 To get updates in Obtainium, add `https://github.com/CoPokBl/OrbitGolf` as an app.
 
